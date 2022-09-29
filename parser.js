@@ -7,16 +7,45 @@ export const parser = (t) => {
   return semi();
 };
 
+// その他は値としてそのまま返す
+export const value = () => {
+  if (tokens.length === 0) {
+    return;
+  }
+  return tokens.shift();
+};
+
+// 関数呼び出し
+export const funcCall = () => {
+  // 関数名を取得
+  let left = value();
+
+  // 関数呼び出しのカッコ
+  let op;
+  while ((op = accept(tokens, "("))) {
+    // ここはvalueではなく、semiであることに注意
+    // カッコの中は心機一転、新しい構文解析を始める
+    const right = semi();
+
+    // 閉じカッコであることを確認して取得
+    op += expect(tokens, ")");
+
+    // 新しいノードを作成し階層を深める
+    left = { left, op, right };
+  }
+  return left;
+};
+
 // セミコロン
 export const semi = () => {
   // print文
-  let left = callPrint();
+  let left = funcCall();
 
   // セミコロンが来たら次のprint文があるかも
   let op;
   while ((op = accept(tokens, ";"))) {
-    // 次のprint文
-    const right = callPrint();
+    // 右辺を取得
+    const right = funcCall();
 
     // 新しいノードを作成し、次にleftに入れることで、階層を作っていく
     left = { left, op, right };
